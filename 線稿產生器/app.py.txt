@@ -1,0 +1,70 @@
+from flask import Flask, render_template, request, send_file, jsonify
+from io import BytesIO
+from PIL import Image
+import traceback
+
+# 載入自訂 AI 模型模組
+from your_ai_model import generate_line_art
+
+# 建立 Flask 應用
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    """
+    顯示主頁面。
+    """
+    return render_template('index.html')
+
+@app.route('/generate', methods=['POST'])
+def generate():
+    """
+    接收用戶輸入，生成線稿並提供下載。
+    """
+    try:
+        # 取得用戶輸入的描述
+        description = request.form.get('description', '').strip()
+        if not description:
+            return jsonify({"error": "描述文字不可為空！"}), 400
+
+        # 調用 AI 模型生成圖片
+        line_art_image = generate_line_art(description)
+
+        # 確保生成的是有效的圖片物件
+        if not isinstance(line_art_image, Image.Image):
+            return jsonify({"error": "AI 模型未生成有效圖片"}), 500
+
+        # 將圖片存入緩衝區，準備返回給用戶
+        buffer = BytesIO()
+        line_art_image.save(buffer, format="PNG")
+        buffer.seek(0)
+
+        # 傳送圖片作為下載檔案
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name="line_art.png",
+            mimetype="image/png"
+        )
+    except Exception as e:
+        # 捕獲並打印錯誤詳細訊息（方便調試）
+        print("錯誤發生：", traceback.format_exc())
+        return jsonify({"error": "伺服器發生錯誤，請稍後再試！"}), 500
+
+@app.errorhandler(404)
+def not_found(error):
+    """
+    自訂 404 錯誤頁面。
+    """
+    return jsonify({"error": "頁面未找到"}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    """
+    自訂 500 錯誤頁面。
+    """
+    return jsonify({"error": "伺服器內部錯誤"}), 500
+
+if __name__ == '__main__':
+    # 啟動伺服器
+    app.run(debug=True, host='0.0.0.0', port=5000)

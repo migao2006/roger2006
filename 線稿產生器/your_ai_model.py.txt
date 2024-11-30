@@ -1,0 +1,13 @@
+from PIL import Image, ImageDraw
+
+def generate_line_art(description):
+    """
+    模擬生成線稿的函式
+    :param description: 用戶輸入的描述
+    :return: PIL.Image 物件
+    """
+    # 模擬生成一個簡單的線稿
+    img = Image.new('RGB', (512, 512), color='white')
+    draw = ImageDraw.Draw(img)
+    draw.text((20, 20), f"Line Art: {description}", fill="black")
+    return img
